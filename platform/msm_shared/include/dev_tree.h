@@ -259,4 +259,7 @@ int dev_tree_add_mem_info(void *fdt, uint32_t offset, uint64_t size, uint64_t ad
 void *dev_tree_appended(void *kernel, uint32_t kernel_size, uint32_t dtb_offset, void *tags);
 int get_dtbo_idx (void);
 int get_dtb_idx (void);
+
+int dev_tree_check_header(const void *fdt);
+const char *dev_tree_get_boot_args(const void *fdt);
 #endif
