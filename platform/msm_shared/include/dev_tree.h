@@ -46,7 +46,7 @@
 #define DTB_MAGIC               0xedfe0dd0
 #define DTB_OFFSET              0x2C
 
-#define DTB_PAD_SIZE            1024
+#define DTB_PAD_SIZE            2048
 #define DTBO_TABLE_MAGIC        0xD7B7AB1E
 #define DTBO_CUSTOM_MAX         4
 #define PLATFORM_FOUNDRY_SHIFT  16
@@ -62,6 +62,7 @@
 #define MAX_SUPPORTED_DTBO_IMG_BUF (8388608)  /* 8MB   8 * 1024 * 1024 */
 #define DTBO_IMG_BUF               (10485760) /* 10MB 10 * 1024 * 1024 */
 #define MAX_SUPPORTED_VBMETA_IMG_BUF (65536)  /* 64 KB 64 * 1024 */
+
 /*
  * For DTB V1: The DTB entries would be of the format
  * qcom,msm-id = <msm8974, CDP, rev_1>; (3 * sizeof(uint32_t))
