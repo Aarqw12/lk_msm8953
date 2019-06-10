@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2008 Travis Geiselbrecht
  *
- * Copyright (c) 2015-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2015-2019, The Linux Foundation. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining
  * a copy of this software and associated documentation files
@@ -278,6 +278,16 @@ bool target_uses_system_as_root(void)
 		return false;
 }
 
+/* Check dynamic partition support is enabled for target */
+bool target_dynamic_partition_supported(void)
+{
+#if DYNAMIC_PARTITION_SUPPORT
+	return true;
+#else
+	return false;
+#endif
+}
+
 /* Default CFG register value */
 uint32_t target_ddr_cfg_reg()
 {
@@ -395,6 +405,7 @@ void get_vibration_type(struct qpnp_hap *config)
 		case SDA429:
 		case SDA439:
 		case QM215:
+		case SDM429W:
 			config->vib_type = VIB_LRA_TYPE;
 			config->hap_rate_cfg1 = QPNP_HAP_RATE_CFG1_41;
 			config->hap_rate_cfg2 = QPNP_HAP_RATE_CFG2_03;

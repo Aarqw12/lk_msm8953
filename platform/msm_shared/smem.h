@@ -2,7 +2,7 @@
  * Copyright (c) 2009, Google Inc.
  * All rights reserved.
  *
- * Copyright (c) 2009-2018, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2009-2019, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -474,7 +474,8 @@ enum {
 	SDM439 = 353,
 	SDA429 = 364,
 	SDA439 = 363,
-	QM215 = 386
+	QM215 = 386,
+	SDM429W = 416,
 };
 
 enum platform {
@@ -516,6 +517,7 @@ enum platform_subtype {
 	HW_PLATFORM_SUBTYPE_SVLTE2A = 3,
 	HW_PLATFORM_SUBTYPE_MTP_WEAR = 5,
 	HW_PLATFORM_SUBTYPE_SGLTE = 6,
+	HW_PLATFORM_SUBTYPE_429W_PM660 = 6,
 	HW_PLATFORM_SUBTYPE_DSDA = 7,
 	HW_PLATFORM_SUBTYPE_DSDA2 = 8,
 	HW_PLATFORM_SUBTYPE_SGLTE2 = 9,
