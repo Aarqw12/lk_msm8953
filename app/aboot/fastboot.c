@@ -447,6 +447,22 @@ static void getvar_all()
 	fastboot_okay("");
 }
 
+void fastboot_stage(const void *data, unsigned sz)
+{
+	arch_invalidate_cache_range((addr_t) download_base, download_size);
+	download_size = 0;
+
+	if (sz > download_max) {
+		fastboot_fail("data too large");
+		return;
+	}
+
+	memcpy(download_base, data, sz);
+	download_size = sz;
+
+	fastboot_okay("");
+}
+
 static void cmd_getvar(const char *arg, void *data, unsigned sz)
 {
 	struct fastboot_var *var;
