@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2014-2016, 2019 The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -34,6 +34,7 @@
 #include <image_verify.h>
 #include <mmc.h>
 #include <oem_keystore.h>
+#include <avb/OEMPublicKey.h>
 #include <openssl/asn1t.h>
 #include <openssl/x509.h>
 #include <partition_parser.h>
@@ -449,6 +450,114 @@ static void boot_verify_send_boot_state(km_boot_state_t *boot_state)
 }
 #endif
 
+#if VERIFIED_BOOT_2
+bool send_rot_command(uint32_t is_unlocked)
+{
+	int ret = 0;
+	unsigned char *input = (unsigned char *)OEMPublicKey;
+	unsigned int key_len = sizeof(OEMPublicKey);
+	unsigned char *keystatebuf = NULL;
+	unsigned char digest[SHA256_SIZE] = {0}, final_digest[SHA256_SIZE] = {0};
+	uint32_t auth_algo = CRYPTO_AUTH_ALG_SHA256;
+	uint32_t boot_device_state = boot_verify_get_state();
+	int app_handle = 0;
+	km_set_rot_req_t *read_req = NULL;
+	km_set_rot_rsp_t read_rsp;
+	app_handle = get_secapp_handle();
+	uint32_t version = 0;
+	void *cpy_ptr;
+
+	if( input == NULL || UINT_MAX - 1 < key_len )
+        {
+                dprintf(CRITICAL, "Failed to read ROT key\n");
+                ASSERT(0);
+        }
+	switch (boot_device_state)
+	{
+		case GREEN:
+		case YELLOW:
+			if(!( keystatebuf = malloc( key_len + 1)))
+			{
+				dprintf(CRITICAL, "Failed to allocate memory for ROT digest\n");
+				ASSERT(0);
+			}
+			memscpy(keystatebuf , key_len + 1,  input, key_len);
+			hash_find((unsigned char *)keystatebuf, key_len , (unsigned char *) digest, auth_algo);
+			keystatebuf[key_len] = (unsigned char )is_unlocked;
+			hash_find((unsigned char *)keystatebuf, key_len + 1, (unsigned char *) final_digest, auth_algo);
+			break;
+		case ORANGE:
+			// Unlocked device and no verification done.
+			// Send the hash of boot device state
+			input = NULL;
+			hash_find((unsigned char *) &is_unlocked, sizeof(unsigned char), (unsigned char *)&final_digest, auth_algo);
+                        break;
+		case RED:
+                default:
+			dprintf(CRITICAL, "Invalid state to boot!\n");
+	}
+	dprintf(SPEW, "Digest: ");
+        for(uint8_t i = 0; i < SHA256_SIZE; i++)
+                dprintf(SPEW, "0x%x ", final_digest[i]);
+        dprintf(SPEW, "\n");
+
+	if(!(read_req = malloc(sizeof(km_set_rot_req_t) + sizeof(final_digest))))
+	{
+		dprintf(CRITICAL, "Failed to allocate memory for ROT structure\n");
+		ASSERT(0);
+	}
+
+	cpy_ptr = (uint8_t *) read_req + sizeof(km_set_rot_req_t);
+	read_req->cmd_id = KEYMASTER_SET_ROT;
+	read_req->rot_ofset = (uint32_t) sizeof(km_set_rot_req_t);
+	read_req->rot_size  = sizeof(final_digest);
+	memscpy(cpy_ptr, sizeof(final_digest), (void *) &final_digest, sizeof(final_digest));
+	dprintf(SPEW, "Sending Root of Trust to trustzone: start\n");
+
+	ret = qseecom_send_command(app_handle, (void*) read_req, sizeof(km_set_rot_req_t) + sizeof(final_digest), (void*) &read_rsp, sizeof(read_rsp));
+	if (ret < 0 || read_rsp.status < 0)
+	{
+		dprintf(CRITICAL, "QSEEcom command for Sending Root of Trust returned error: %d\n", read_rsp.status);
+		free(read_req);
+		return false;
+	}
+
+#if OSVERSION_IN_BOOTIMAGE
+	boot_state_info.is_unlocked = is_unlocked;
+	boot_state_info.color = boot_verify_get_state();
+	memscpy(boot_state_info.public_key, sizeof(boot_state_info.public_key), digest, SHA256_SIZE);
+	boot_verify_send_boot_state(&boot_state_info);
+#endif
+	if ( is_secure_boot_enable()
+		&& (dev_boot_state != GREEN))
+	{
+		version = qseecom_get_version();
+		if(allow_set_fuse(version)) {
+			ret = set_tamper_fuse_cmd(HLOS_IMG_TAMPER_FUSE);
+			if (ret) {
+				ret = false;
+				goto err;
+			}
+			ret = set_tamper_fuse_cmd(HLOS_TAMPER_NOTIFY_FUSE);
+			if (ret) {
+				dprintf(CRITICAL, "send_rot_command: set_tamper_fuse_cmd (TZ_HLOS_TAMPER_NOTIFY_FUSE) fails!\n");
+				ret = false;
+				goto err;
+			}
+		} else {
+			dprintf(CRITICAL, "send_rot_command: TZ didn't support this feature! Version: major = %d, minor = %d, patch = %d\n", (version >> 22) & 0x3FF, (version >> 12) & 0x3FF, version & 0x3FF);
+		goto err;
+		}
+	}
+	dprintf(CRITICAL, "Sending Root of Trust to trustzone: end\n");
+	ret = true;
+err:
+	if(keystatebuf)
+		free(keystatebuf);
+        free(read_req);
+        return ret;
+}
+#else
 bool send_rot_command(uint32_t is_unlocked)
 {
 	int ret = 0;
@@ -605,6 +714,7 @@ err:
 	free(rot_input);
 	return ret;
 }
+#endif
 
 unsigned char* get_boot_fingerprint(unsigned int* buf_size)
 {
@@ -779,6 +889,25 @@ KEYSTORE *boot_gerity_get_oem_keystore()
 	return oem_keystore;
 }
 
+void set_os_version_with_date(unsigned char* img_addr, uint32_t system_security_level)
+{
+	boot_img_hdr *img_hdr = NULL;
+	bool supported;
+	int ret = get_date_support (&supported);
+
+	/* Extract the os version and patch level */
+	if (img_addr) {
+		img_hdr = (boot_img_hdr *)img_addr;
+		boot_state_info.system_version = (img_hdr->os_version & 0xFFFFF800) >> 11;
+		if(!ret && supported && system_security_level)
+			boot_state_info.system_security_level = system_security_level;
+		else
+			boot_state_info.system_security_level = (img_hdr->os_version & 0x7FF);
+	} else {
+		dprintf(CRITICAL, "Image address should not be NULL\n");
+	}
+}
+
 #if OSVERSION_IN_BOOTIMAGE
 void set_os_version(unsigned char* img_addr)
 {
@@ -824,4 +953,27 @@ int set_verified_boot_hash (const char *vbh, size_t vbh_size)
 		ASSERT(0);
 	}
 	return ret;
+}
+
+int get_date_support (bool *supported)
+{
+	int status = 0;
+	km_get_date_support_req date_support_req = {0};
+	km_get_date_support_rsp date_support_rsp = {0};
+	int app_handle = get_secapp_handle();
+
+	date_support_req.cmd_id = KEYMASTER_GET_DATE_SUPPORT;
+	status = qseecom_send_command (app_handle, (void *)&date_support_req, sizeof (date_support_req), (void *)&date_support_rsp, sizeof (date_support_rsp));
+	if (status != 0 || date_support_rsp.status != 0 ) {
+		dprintf(CRITICAL, "QSEEcom command to get date support returned error, status: %d\n",date_support_rsp.status);
+
+		if (status == 0 && date_support_rsp.status == KM_ERROR_INVALID_TAG) {
+			dprintf(INFO, "Date in patch level NOT supported in keymaster\n");
+		}
+		*supported = false;
+		return status;
+	}
+
+	*supported = true;
+	return status;
 }

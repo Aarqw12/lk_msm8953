@@ -294,7 +294,7 @@ static AvbSlotVerifyResult load_requested_partitions(
     avb_debugv(part_name, ": Loading entire partition.\n", NULL);
 
     io_ret = ops->read_from_partition(
-        ops, part_name, 0 /* offset */, image_size, &image_buf, &part_num_read);
+        ops, requested_partitions[n], 0 /* offset */, image_size, &image_buf, &part_num_read);
     if (io_ret == AVB_IO_RESULT_ERROR_OOM) {
       ret = AVB_SLOT_VERIFY_RESULT_ERROR_OOM;
       goto out;
@@ -424,7 +424,7 @@ static AvbSlotVerifyResult load_and_verify_vbmeta(
     AvbFooter footer;
 
     io_ret = ops->read_from_partition(ops,
-                                      full_partition_name,
+                                      partition_name,
                                       -AVB_FOOTER_SIZE,
                                       AVB_FOOTER_SIZE,
                                       footer_buf,
@@ -459,7 +459,7 @@ static AvbSlotVerifyResult load_and_verify_vbmeta(
         goto out;
     }
     io_ret = ops->read_from_partition(ops,
-                                    full_partition_name,
+                                    partition_name,
                                     vbmeta_offset,
                                     vbmeta_size,
                                     vbmeta_buf,
@@ -1276,6 +1276,35 @@ out:
   return ret;
 }
 
+static bool has_system_partition(AvbOps* ops, const char* ab_suffix) {
+  char part_name[PART_NAME_MAX_SIZE];
+  char* system_part_name = "system";
+  char guid_buf[37];
+  AvbIOResult io_ret;
+
+  if (!avb_str_concat(part_name,
+                      sizeof part_name,
+                      system_part_name,
+                      avb_strlen(system_part_name),
+                      ab_suffix,
+                      avb_strlen(ab_suffix))) {
+    avb_error("System partition name and suffix does not fit.\n");
+    return false;
+  }
+
+  io_ret = ops->get_unique_guid_for_partition(
+      ops, part_name, guid_buf, sizeof guid_buf);
+  if (io_ret == AVB_IO_RESULT_ERROR_NO_SUCH_PARTITION) {
+    avb_debug("No system partition.\n");
+    return false;
+  } else if (io_ret != AVB_IO_RESULT_OK) {
+    avb_error("Error getting unique GUID for system partition.\n");
+    return false;
+  }
+
+  return true;
+}
+
 AvbSlotVerifyResult avb_slot_verify(AvbOps* ops,
                                     const char* const* requested_partitions,
                                     const char* ab_suffix,
@@ -1377,8 +1406,16 @@ AvbSlotVerifyResult avb_slot_verify(AvbOps* ops,
        * that the system partition is mounted.
        */
       avb_assert(slot_data->cmdline == NULL);
-      slot_data->cmdline =
-          avb_strdup("root=PARTUUID=$(ANDROID_SYSTEM_PARTUUID)");
+      // Devices with dynamic partitions won't have system partition.
+      // Instead, it has a large super partition to accommodate *.img files.
+      // See b/119551429 for details.
+      if (has_system_partition(ops, ab_suffix)) {
+        slot_data->cmdline =
+            avb_strdup("root=PARTUUID=$(ANDROID_SYSTEM_PARTUUID)");
+      } else {
+        // The |cmdline| field should be a NUL-terminated string.
+        slot_data->cmdline = avb_strdup("");
+      }
       if (slot_data->cmdline == NULL) {
         ret = AVB_SLOT_VERIFY_RESULT_ERROR_OOM;
         goto fail;
@@ -1399,7 +1436,7 @@ AvbSlotVerifyResult avb_slot_verify(AvbOps* ops,
     }
 
     /* Substitute $(ANDROID_SYSTEM_PARTUUID) and friends. */
-    if (slot_data->cmdline != NULL) {
+    if (slot_data->cmdline != NULL && avb_strlen(slot_data->cmdline) != 0) {
       char* new_cmdline;
       new_cmdline = sub_cmdline(
           ops, slot_data->cmdline, ab_suffix, using_boot_for_vbmeta);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2015, 2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015, 2018-2019, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -32,6 +32,7 @@
 #include <bits.h>
 #include <debug.h>
 #include <platform.h>
+#include <board.h>
 
 
 static uint32_t ldo1[][11]=
@@ -101,6 +102,56 @@ static uint32_t ldo6[][11]=
 	},
 };
 
+static uint32_t ldo6_pm660[][11]=
+{
+	{
+		LDOA_RES_TYPE, 6,
+		KEY_SOFTWARE_ENABLE, 4, GENERIC_DISABLE,
+		KEY_MICRO_VOLT, 4, 0,
+		KEY_CURRENT, 4, 0,
+	},
+
+	{
+		LDOA_RES_TYPE, 6,
+		KEY_SOFTWARE_ENABLE, 4, GENERIC_ENABLE,
+		KEY_MICRO_VOLT, 4, 800000,
+		KEY_CURRENT, 4, 150,
+	},
+};
+
+static uint32_t ldo13_pm660[][11]=
+{
+	{
+		LDOA_RES_TYPE, 13,
+		KEY_SOFTWARE_ENABLE, 4, GENERIC_DISABLE,
+		KEY_MICRO_VOLT, 4, 0,
+		KEY_CURRENT, 4, 0,
+	},
+
+	{
+		LDOA_RES_TYPE, 13,
+		KEY_SOFTWARE_ENABLE, 4, GENERIC_ENABLE,
+		KEY_MICRO_VOLT, 4, 1800000,
+		KEY_CURRENT, 4, 40,
+	},
+};
+
+static uint32_t ldo15_pm660[][11]=
+{
+	{
+		LDOA_RES_TYPE, 15,
+		KEY_SOFTWARE_ENABLE, 4, GENERIC_DISABLE,
+		KEY_MICRO_VOLT, 4, 0,
+		KEY_CURRENT, 4, 0,
+	},
+
+	{
+		LDOA_RES_TYPE, 15,
+		KEY_SOFTWARE_ENABLE, 4, GENERIC_ENABLE,
+		KEY_MICRO_VOLT, 4, 2800000,
+		KEY_CURRENT, 4, 40,
+	},
+};
 
 static uint32_t ldo17[][11]=
 {
@@ -121,11 +172,13 @@ static uint32_t ldo17[][11]=
 
 void regulator_enable(uint32_t enable)
 {
+	uint32_t hw_subtype = board_hardware_subtype();
+
 	if (platform_is_msm8956()) {
 		if (enable & REG_LDO1)
 			rpm_send_data(&ldo1[GENERIC_ENABLE][0], 36, RPM_REQUEST_TYPE);
 
-	} else if (platform_is_sdm439() || platform_is_sdm429()) {
+	} else if (platform_is_sdm439() || platform_is_sdm429() || platform_is_sdm429w()) {
 		if (enable & REG_LDO5)
 			rpm_send_data(&ldo5[GENERIC_ENABLE][0],
 				36, RPM_REQUEST_TYPE);
@@ -134,11 +187,25 @@ void regulator_enable(uint32_t enable)
 			rpm_send_data(&ldo2[GENERIC_ENABLE][0], 36, RPM_REQUEST_TYPE);
 	}
 
+	if ((platform_is_sdm429() && (board_hardware_subtype() == HW_PLATFORM_SUBTYPE_429W_PM660)) || platform_is_sdm429w()) {
+		if (enable & REG_LDO13)
+			rpm_send_data(&ldo13_pm660[GENERIC_ENABLE][0],
+				36, RPM_REQUEST_TYPE);
+		if (enable & REG_LDO15)
+			rpm_send_data(&ldo15_pm660[GENERIC_ENABLE][0],
+				36, RPM_REQUEST_TYPE);
+	}
+
 	if (enable & REG_LDO17)
 		rpm_send_data(&ldo17[GENERIC_ENABLE][0], 36, RPM_REQUEST_TYPE);
 
-	if (enable & REG_LDO6)
-		rpm_send_data(&ldo6[GENERIC_ENABLE][0], 36, RPM_REQUEST_TYPE);
+	if (enable & REG_LDO6) {
+		if ((platform_is_sdm429() || platform_is_sdm429w()) && hw_subtype
+				== HW_PLATFORM_SUBTYPE_429W_PM660)
+			rpm_send_data(&ldo6_pm660[GENERIC_ENABLE][0], 36, RPM_REQUEST_TYPE);
+		else
+			rpm_send_data(&ldo6[GENERIC_ENABLE][0], 36, RPM_REQUEST_TYPE);
+	}
 }
 
 void regulator_disable(uint32_t enable)
@@ -147,7 +214,7 @@ void regulator_disable(uint32_t enable)
 		if (enable & REG_LDO1)
 			rpm_send_data(&ldo1[GENERIC_DISABLE][0], 36, RPM_REQUEST_TYPE);
 
-	} else if (platform_is_sdm439() || platform_is_sdm429()) {
+	} else if (platform_is_sdm439() || platform_is_sdm429() || platform_is_sdm429w()) {
 		if (enable & REG_LDO5)
 			rpm_send_data(&ldo5[GENERIC_DISABLE][0],
 				36, RPM_REQUEST_TYPE);

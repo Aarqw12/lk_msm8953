@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2016, 2018 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2016, 2018-2019 The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -65,6 +65,8 @@
 #include "include/panel_lead_fl10802_fwvga_video.h"
 #include "include/panel_hx8399c_fhd_pluse_video.h"
 #include "include/panel_hx8399c_hd_plus_video.h"
+#include "include/panel_edo_rm67162_qvga_cmd.h"
+#include "include/panel_truly_rm69090_qvga_cmd.h"
 #include "include/panel_nt35695b_truly_fhd_video.h"
 #include "include/panel_nt35695b_truly_fhd_cmd.h"
 
@@ -94,6 +96,8 @@ enum {
 	HX8399C_HD_PLUS_VIDEO_PANEL,
 	NT35695B_TRULY_FHD_VIDEO_PANEL,
 	NT35695B_TRULY_FHD_CMD_PANEL,
+	RM67162_QVGA_CMD_PANEL,
+	RM69090_QVGA_CMD_PANEL,
 	UNKNOWN_PANEL
 };
 
@@ -128,6 +132,8 @@ static struct panel_list supp_panels[] = {
 	{"hx8399c_hd_plus_video", HX8399C_HD_PLUS_VIDEO_PANEL},
 	{"nt35695b_truly_fhd_video", NT35695B_TRULY_FHD_VIDEO_PANEL},
 	{"nt35695b_truly_fhd_cmd", NT35695B_TRULY_FHD_CMD_PANEL},
+	{"rm67162_qvga_cmd", RM67162_QVGA_CMD_PANEL},
+	{"rm69090_qvga_cmd", RM69090_QVGA_CMD_PANEL},
 };
 
 static uint32_t panel_id;
@@ -815,6 +821,68 @@ static int init_panel_data(struct panel_struct *panelstruct,
 		pinfo->mipi.signature    = HX8399C_HD_PLUS_VIDEO_SIGNATURE;
 		pinfo->mipi.tx_eot_append = true;
 		break;
+	case RM67162_QVGA_CMD_PANEL:
+		panelstruct->paneldata    = &edo_rm67162_qvga_cmd_panel_data;
+		panelstruct->panelres     = &edo_rm67162_qvga_cmd_panel_res;
+		panelstruct->color        = &edo_rm67162_qvga_cmd_color;
+		panelstruct->videopanel   =
+				&edo_rm67162_qvga_cmd_video_panel;
+		panelstruct->commandpanel =
+				&edo_rm67162_qvga_cmd_command_panel;
+		panelstruct->state        = &edo_rm67162_qvga_cmd_state;
+		panelstruct->laneconfig   =
+				&edo_rm67162_qvga_cmd_lane_config;
+		panelstruct->paneltiminginfo
+				= &edo_rm67162_qvga_cmd_timing_info;
+		panelstruct->panelresetseq
+				= &edo_rm67162_qvga_cmd_reset_seq;
+		panelstruct->backlightinfo = &edo_rm67162_qvga_cmd_backlight;
+		pinfo->labibb = NULL;
+		pinfo->mipi.panel_on_cmds
+				= edo_rm67162_qvga_cmd_on_command;
+		pinfo->mipi.num_of_panel_on_cmds
+				= EDO_RM67162_QVGA_CMD_ON_COMMAND;
+		pinfo->mipi.panel_off_cmds
+				= edo_rm67162_qvga_cmd_off_command;
+		pinfo->mipi.num_of_panel_off_cmds
+				= EDO_RM67162_QVGA_CMD_OFF_COMMAND;
+		if (phy_db->pll_type == DSI_PLL_TYPE_12NM)
+			memcpy(phy_db->timing,
+				edo_rm67162_qvga_cmd_12nm_timings,
+				TIMING_SIZE_12NM);
+		pinfo->mipi.tx_eot_append = true;
+		break;
+	case RM69090_QVGA_CMD_PANEL:
+		panelstruct->paneldata    = &truly_rm69090_qvga_cmd_panel_data;
+		panelstruct->panelres     = &truly_rm69090_qvga_cmd_panel_res;
+		panelstruct->color        = &truly_rm69090_qvga_cmd_color;
+		panelstruct->videopanel   =
+				&truly_rm69090_qvga_cmd_video_panel;
+		panelstruct->commandpanel =
+				&truly_rm69090_qvga_cmd_command_panel;
+		panelstruct->state        = &truly_rm69090_qvga_cmd_state;
+		panelstruct->laneconfig   =
+				&truly_rm69090_qvga_cmd_lane_config;
+		panelstruct->paneltiminginfo
+				= &truly_rm69090_qvga_cmd_timing_info;
+		panelstruct->panelresetseq
+				= &truly_rm69090_qvga_cmd_reset_seq;
+		panelstruct->backlightinfo = &truly_rm69090_qvga_cmd_backlight;
+		pinfo->labibb = NULL;
+		pinfo->mipi.panel_on_cmds
+				= truly_rm69090_qvga_cmd_on_command;
+		pinfo->mipi.num_of_panel_on_cmds
+				= TRULY_RM69090_QVGA_CMD_ON_COMMAND;
+		pinfo->mipi.panel_off_cmds
+				= truly_rm69090_qvga_cmd_off_command;
+		pinfo->mipi.num_of_panel_off_cmds
+				= TRULY_RM69090_QVGA_CMD_OFF_COMMAND;
+		if (phy_db->pll_type == DSI_PLL_TYPE_12NM)
+			memcpy(phy_db->timing,
+				truly_rm69090_qvga_cmd_12nm_timings,
+				TIMING_SIZE_12NM);
+		pinfo->mipi.tx_eot_append = true;
+		break;
 	case NT35695B_TRULY_FHD_VIDEO_PANEL:
 		panelstruct->paneldata    = &nt35695b_truly_fhd_video_panel_data;
 		panelstruct->panelres     = &nt35695b_truly_fhd_video_panel_res;
@@ -1007,8 +1075,13 @@ int oem_panel_select(const char *panel_name, struct panel_struct *panelstruct,
 			panel_id = HX8399C_FHD_PLUSE_VIDEO_PANEL;
 		}
 
-		if (platform_is_sdm429()) {
-			panel_id = HX8399C_HD_PLUS_VIDEO_PANEL;
+		if (platform_is_sdm429() || platform_is_sdm429w()) {
+			if (hw_subtype == HW_PLATFORM_SUBTYPE_429W_PM660) /* WTP 2700 DVT */
+			  panel_id = RM67162_QVGA_CMD_PANEL;
+			else if (hw_subtype == HW_PLATFORM_SUBTYPE_429W_PM660_WDP) /* WDP 2700 */
+			  panel_id = RM69090_QVGA_CMD_PANEL;
+      else
+				panel_id = HX8399C_HD_PLUS_VIDEO_PANEL;
 		}
 
 		/* QRD EVT1 uses OTM1906C, and EVT2 uses HX8394F */
@@ -1045,7 +1118,7 @@ panel_init:
 	 * Update all data structures after 'panel_init' label. Only panel
 	 * selection is supposed to happen before that.
 	 */
-	if (platform_is_sdm439() || platform_is_sdm429()) {
+	if (platform_is_sdm439() || platform_is_sdm429() || platform_is_sdm429w()) {
 		phy_db->pll_type = DSI_PLL_TYPE_12NM;
 		pinfo->lane_config = mdss_dsi_lane_config;
 		goto end;

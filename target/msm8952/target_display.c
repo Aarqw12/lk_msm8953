@@ -1,4 +1,4 @@
-/* Copyright (c) 2015-2018, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2015-2019, The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -62,6 +62,8 @@
 #define HDMI_ADV_PANEL_STRING "1:dsi:0:qcom,mdss_dsi_adv7533_1080p:1:none:cfg:single_dsi"
 #define TRULY_VID_PANEL_STRING "1:dsi:0:qcom,mdss_dsi_truly_720p_video:1:none:cfg:single_dsi"
 #define TRULY_CMD_PANEL_STRING "1:dsi:0:qcom,mdss_dsi_truly_720p_cmd:1:none:cfg:single_dsi"
+
+#define VARIANT_MAJOR_MASK        (0x00ff0000)
 
 /*---------------------------------------------------------------------------*/
 /* GPIO configuration                                                        */
@@ -362,7 +364,7 @@ int target_panel_clock(uint8_t enable, struct msm_panel_info *pinfo)
 		pll_data->is_center_spread = false;
 		pll_data->ssc_freq = 30000;
 		pll_data->ssc_ppm = 5000;
-	} else if (platform_is_sdm439() || platform_is_sdm429()) {
+	} else if (platform_is_sdm439() || platform_is_sdm429() || platform_is_sdm429w()) {
 		pll_data->ssc_en = true;
 		pll_data->is_center_spread = false;
 		pll_data->ssc_freq = 31500;
@@ -386,7 +388,7 @@ int target_panel_clock(uint8_t enable, struct msm_panel_info *pinfo)
 
 		gcc_dsi_lp_clock_enable(flags);
 
-		if (platform_is_sdm439() || platform_is_sdm429()) {
+		if (platform_is_sdm439() || platform_is_sdm429() || platform_is_sdm429w()) {
 			mdss_dsi_auto_pll_12nm_config(pinfo);
 
 			/*
@@ -450,8 +452,19 @@ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
 		bkl_gpio.pin_id = 93;
 		enable_gpio.pin_id = 94;
 		pinfo->mipi.use_enable_gpio = 1;
-	} else if (platform_is_sdm439() || platform_is_sdm429()) {
+	} else if (platform_is_sdm439() || platform_is_sdm429() || platform_is_sdm429w()) {
 		reset_gpio.pin_id = 60;
+		if ((platform_is_sdm429() && (board_hardware_subtype() == HW_PLATFORM_SUBTYPE_429W_PM660)) || platform_is_sdm429w()) {
+      if (board_hardware_subtype() == HW_PLATFORM_SUBTYPE_429W_PM660_WDP) {
+        reset_gpio.pin_id = 60;
+        pinfo->mipi.use_enable_gpio = 0;
+      }
+      else {
+        reset_gpio.pin_id = 60;
+			  pinfo->mipi.use_enable_gpio = 1;
+			  enable_gpio.pin_id = 69;
+      }
+		}
 	} else if ((hw_id == HW_PLATFORM_QRD) &&
 		   (hw_subtype == HW_PLATFORM_SUBTYPE_POLARIS)) {
 		enable_gpio.pin_id = 19;
@@ -467,7 +480,7 @@ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
 			gpio_set_dir(enable_gpio.pin_id, 2);
 		}
 
-		if (platform_is_sdm439() || platform_is_sdm429()) {
+		if (platform_is_sdm439() || platform_is_sdm429() || platform_is_sdm429w()) {
 			/* enable PM GPIO-4 for backlight enable */
 			struct pm8x41_gpio gpio_param = {
 			.direction = PM_GPIO_DIR_OUT,
@@ -477,6 +490,13 @@ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
 			.output_buffer = PM_GPIO_OUT_CMOS,
 			.out_strength = PM_GPIO_OUT_DRIVE_HIGH,
 			};
+
+			if (((board_target_id() & VARIANT_MAJOR_MASK)) &&
+				platform_is_sdm429w()) {
+				/* enable PM660 GPIO-12 for backlight enable */
+				bkl_en_gpio.pin_id = 12;
+				gpio_param.inv_int_pol = PM_GPIO_INVERT;
+			}
 
 			dprintf(SPEW, "%s: gpio=%d enable=%d\n", __func__,
 				bkl_en_gpio.pin_id, enable);
@@ -621,7 +641,7 @@ int target_dsi_phy_config(struct mdss_dsi_phy_ctrl *phy_db)
 
 int target_display_get_base_offset(uint32_t base)
 {
-	if (platform_is_sdm439() || platform_is_sdm429()) {
+	if (platform_is_sdm439() || platform_is_sdm429() || platform_is_sdm429w()) {
 		if (base == MIPI_DSI0_BASE)
 			return DSI0_BASE_ADJUST;
 		else if (base == DSI0_PHY_BASE)
@@ -650,13 +670,19 @@ int target_ldo_ctrl(uint8_t enable, struct msm_panel_info *pinfo)
 	int rc = 0;
 	uint32_t ldo_num = REG_LDO6 | REG_LDO17;
 	uint32_t pmic_type = target_get_pmic();
+	uint32_t hw_subtype = board_hardware_subtype();
 
 	if (platform_is_msm8956())
 		ldo_num |= REG_LDO1;
-	else if (platform_is_sdm439() || platform_is_sdm429())
+	else if (platform_is_sdm439() || platform_is_sdm429() || platform_is_sdm429w())
 		ldo_num |= REG_LDO5; /* LDO23 is enable by default */
 	else
 		ldo_num |= REG_LDO2;
+
+	if ((platform_is_sdm429() && (board_hardware_subtype() == HW_PLATFORM_SUBTYPE_429W_PM660)) || platform_is_sdm429w()) {
+			ldo_num &= ~(REG_LDO17 | REG_LDO5);
+			ldo_num |= REG_LDO13 | REG_LDO15;
+		}
 
 	if (enable) {
 		regulator_enable(ldo_num);
@@ -683,6 +709,10 @@ int target_ldo_ctrl(uint8_t enable, struct msm_panel_info *pinfo)
 		 * Do not disable them.
 		 */
 		regulator_disable(REG_LDO17);
+
+		if ((platform_is_sdm429() || platform_is_sdm429w()) && hw_subtype
+			== HW_PLATFORM_SUBTYPE_429W_PM660)
+			regulator_disable(REG_LDO13 | REG_LDO15);
 	}
 
 	return NO_ERROR;
