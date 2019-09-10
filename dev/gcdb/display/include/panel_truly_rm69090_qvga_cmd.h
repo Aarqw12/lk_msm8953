@@ -26,8 +26,8 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _PANEL_EDO_RM67162_QVGA_CMD_H_
-#define _PANEL_EDO_RM67162_QVGA_CMD_H_
+#ifndef _PANEL_TRULY_RM69090_QVGA_CMD_H_
+#define _PANEL_TRULY_RM69090_QVGA_CMD_H_
 /*---------------------------------------------------------------------------*/
 /* HEADER files                                                              */
 /*---------------------------------------------------------------------------*/
@@ -36,168 +36,157 @@
 /*---------------------------------------------------------------------------*/
 /* Panel configuration                                                       */
 /*---------------------------------------------------------------------------*/
-static struct panel_config edo_rm67162_qvga_cmd_panel_data = {
-	"qcom,mdss_dsi_edo_rm67162_qvga_cmd", "dsi:0:", "qcom,mdss-dsi-panel",
+static struct panel_config truly_rm69090_qvga_cmd_panel_data = {
+	"qcom,mdss_dsi_truly_rm69090_qvga_cmd", "dsi:0:", "qcom,mdss-dsi-panel",
 	10, 1, "DISPLAY_1", 0, 0, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, NULL
 };
 
 /*---------------------------------------------------------------------------*/
 /* Panel resolution                                                          */
 /*---------------------------------------------------------------------------*/
-static struct panel_resolution edo_rm67162_qvga_cmd_panel_res = {
-	320, 360, 140, 164, 8, 0, 6, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0
+static struct panel_resolution truly_rm69090_qvga_cmd_panel_res = {
+	368, 448, 40, 20, 2, 0, 6, 8, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 /*---------------------------------------------------------------------------*/
 /* Panel color information                                                   */
 /*---------------------------------------------------------------------------*/
-static struct color_info edo_rm67162_qvga_cmd_color = {
+static struct color_info truly_rm69090_qvga_cmd_color = {
 	24, 0, 0xff, 0, 0, 0
 };
 
 /*---------------------------------------------------------------------------*/
 /* Panel on/off command information                                          */
 /*---------------------------------------------------------------------------*/
-static char edo_rm67162_qvga_cmd_on_cmd0[] = {
-	0x02, 0x00, 0x29, 0xC0,
-	0xFE, 0x0A, 0xFF, 0xFF,
+static char truly_rm69090_qvga_cmd_on_cmd0[] = {
+	0xFE, 0x01, 0x15, 0x80
 };
 
-static char edo_rm67162_qvga_cmd_on_cmd1[] = {
-	0x02, 0x00, 0x29, 0xC0,
-	0x29, 0x90, 0xFF, 0xFF,
+static char truly_rm69090_qvga_cmd_on_cmd1[] = {
+	0x6A, 0x03, 0x15, 0x80
 };
 
-static char edo_rm67162_qvga_cmd_on_cmd2[] = {
-	0x02, 0x00, 0x29, 0xC0,
-	0xFE, 0x05, 0xFF, 0xFF,
+static char truly_rm69090_qvga_cmd_on_cmd2[] = {
+	0xFE, 0x00, 0x15, 0x80
 };
 
-static char edo_rm67162_qvga_cmd_on_cmd3[] = {
-	0x02, 0x00, 0x29, 0xC0,
-	0x05, 0x00, 0xFF, 0xFF,
+static char truly_rm69090_qvga_cmd_on_cmd3[] = {
+	0x35, 0x00, 0x15, 0x80
 };
 
-static char edo_rm67162_qvga_cmd_on_cmd4[] = {
-	0x02, 0x00, 0x29, 0xC0,
-	0xFE, 0x00, 0xFF, 0xFF,
+static char truly_rm69090_qvga_cmd_on_cmd4[] = {
+	0x53, 0x20, 0x15, 0x80
 };
 
-static char edo_rm67162_qvga_cmd_on_cmd5[] = {
-	0x02, 0x00, 0x29, 0xC0,
-	0x35, 0x00, 0xFF, 0xFF,
+static char truly_rm69090_qvga_cmd_on_cmd5[] = {
+	0x51, 0x80, 0x15, 0x80
 };
 
-static char edo_rm67162_qvga_cmd_on_cmd6[] = {
-	0x02, 0x00, 0x29, 0xC0,
-	0x51, 0xFF, 0xFF, 0xFF,
+static char truly_rm69090_qvga_cmd_on_cmd6[] = {
+	0x05, 0x00, 0x39, 0xC0,
+	0x2A, 0x00, 0x10, 0x01,
+	0x7F, 0xFF, 0xFF, 0xFF,
 };
 
-static char edo_rm67162_qvga_cmd_on_cmd7[] = {
-	0x02, 0x00, 0x29, 0xC0,
-	0x53, 0x20, 0xFF, 0xFF,
+static char truly_rm69090_qvga_cmd_on_cmd7[] = {
+	0x05, 0x00, 0x39, 0xC0,
+	0x2B, 0x00, 0x00, 0x01,
+	0xBF, 0xFF, 0xFF, 0xFF,
 };
 
-static char edo_rm67162_qvga_cmd_on_cmd8[] = {
-	0x02, 0x00, 0x29, 0xC0,
-	0x11, 0x00, 0xFF, 0xFF,
+static char truly_rm69090_qvga_cmd_on_cmd8[] = {
+	0x11, 0x00, 0x05, 0x80
 };
 
-static char edo_rm67162_qvga_cmd_on_cmd9[] = {
-	0x02, 0x00, 0x29, 0xC0,
-	0x29, 0x00, 0xFF, 0xFF,
+static char truly_rm69090_qvga_cmd_on_cmd9[] = {
+	0x29, 0x00, 0x05, 0x80
 };
 
-static struct mipi_dsi_cmd edo_rm67162_qvga_cmd_on_command[] = {
-	{0x8, edo_rm67162_qvga_cmd_on_cmd0, 0x00},
-	{0x8, edo_rm67162_qvga_cmd_on_cmd1, 0x00},
-	{0x8, edo_rm67162_qvga_cmd_on_cmd2, 0x00},
-	{0x8, edo_rm67162_qvga_cmd_on_cmd3, 0x00},
-	{0x8, edo_rm67162_qvga_cmd_on_cmd4, 0x00},
-	{0x8, edo_rm67162_qvga_cmd_on_cmd5, 0x00},
-	{0x8, edo_rm67162_qvga_cmd_on_cmd6, 0x00},
-	{0x8, edo_rm67162_qvga_cmd_on_cmd7, 0x00},
-	{0x8, edo_rm67162_qvga_cmd_on_cmd8, 0x78},
-	{0x8, edo_rm67162_qvga_cmd_on_cmd9, 0x05}
+static struct mipi_dsi_cmd truly_rm69090_qvga_cmd_on_command[] = {
+	{0x4, truly_rm69090_qvga_cmd_on_cmd0, 0x00},
+	{0x4, truly_rm69090_qvga_cmd_on_cmd1, 0x00},
+	{0x4, truly_rm69090_qvga_cmd_on_cmd2, 0x00},
+	{0x4, truly_rm69090_qvga_cmd_on_cmd3, 0x00},
+	{0x4, truly_rm69090_qvga_cmd_on_cmd4, 0x00},
+	{0x4, truly_rm69090_qvga_cmd_on_cmd5, 0x00},
+	{0xc, truly_rm69090_qvga_cmd_on_cmd6, 0x00},
+	{0xc, truly_rm69090_qvga_cmd_on_cmd7, 0x00},
+	{0x4, truly_rm69090_qvga_cmd_on_cmd8, 0x78},
+	{0x4, truly_rm69090_qvga_cmd_on_cmd9, 0x40}
 };
 
-#define EDO_RM67162_QVGA_CMD_ON_COMMAND 10
+#define TRULY_RM69090_QVGA_CMD_ON_COMMAND 10
 
 
-static char edo_rm67162_qvga_cmdoff_cmd0[] = {
-	0x51, 0x00, 0x05, 0x80
-};
-
-static char edo_rm67162_qvga_cmdoff_cmd1[] = {
+static char truly_rm69090_qvga_cmdoff_cmd0[] = {
 	0x28, 0x00, 0x05, 0x80
 };
 
-static char edo_rm67162_qvga_cmdoff_cmd2[] = {
+static char truly_rm69090_qvga_cmdoff_cmd1[] = {
 	0x10, 0x00, 0x05, 0x80
 };
 
-static char edo_rm67162_qvga_cmdoff_cmd3[] = {
-	0x4F, 0x01, 0x05, 0x80
+static char truly_rm69090_qvga_cmdoff_cmd2[] = {
+	0x4F, 0x01, 0x15, 0x80
 };
 
-static struct mipi_dsi_cmd edo_rm67162_qvga_cmd_off_command[] = {
-	{0x4, edo_rm67162_qvga_cmdoff_cmd0, 0x05},
-	{0x4, edo_rm67162_qvga_cmdoff_cmd1, 0x14},
-	{0x4, edo_rm67162_qvga_cmdoff_cmd2, 0x78},
-	{0x4, edo_rm67162_qvga_cmdoff_cmd3, 0x14}
+static struct mipi_dsi_cmd truly_rm69090_qvga_cmd_off_command[] = {
+	{0x4, truly_rm69090_qvga_cmdoff_cmd0, 0x28},
+	{0x4, truly_rm69090_qvga_cmdoff_cmd1, 0x78},
+	{0x4, truly_rm69090_qvga_cmdoff_cmd2, 0x00}
 };
 
-#define EDO_RM67162_QVGA_CMD_OFF_COMMAND 4
+#define TRULY_RM69090_QVGA_CMD_OFF_COMMAND 3
 
 
-static struct command_state edo_rm67162_qvga_cmd_state = {
+static struct command_state truly_rm69090_qvga_cmd_state = {
 	0, 1
 };
 
 /*---------------------------------------------------------------------------*/
 /* Command mode panel information                                            */
 /*---------------------------------------------------------------------------*/
-static struct commandpanel_info edo_rm67162_qvga_cmd_command_panel = {
+static struct commandpanel_info truly_rm69090_qvga_cmd_command_panel = {
 	1, 1, 1, 1, 2, 0x2c, 0, 0, 0, 1, 0, 0
 };
 
 /*---------------------------------------------------------------------------*/
 /* Video mode panel information                                              */
 /*---------------------------------------------------------------------------*/
-static struct videopanel_info edo_rm67162_qvga_cmd_video_panel = {
+static struct videopanel_info truly_rm69090_qvga_cmd_video_panel = {
 	1, 0, 0, 0, 1, 1, 2, 0, 0x9
 };
 
 /*---------------------------------------------------------------------------*/
 /* Lane configuration                                                        */
 /*---------------------------------------------------------------------------*/
-static struct lane_configuration edo_rm67162_qvga_cmd_lane_config = {
+static struct lane_configuration truly_rm69090_qvga_cmd_lane_config = {
 	1, 0, 1, 0, 0, 0, 0
 };
 
 /*---------------------------------------------------------------------------*/
 /* Panel timing                                                              */
 /*---------------------------------------------------------------------------*/
-static const uint32_t edo_rm67162_qvga_cmd_12nm_timings[] = {
-	0x06, 0x05, 0x01, 0x0A, 0x00, 0x03, 0x01, 0x0F
+static const uint32_t truly_rm69090_qvga_cmd_12nm_timings[] = {
+	0x04, 0x04, 0x01, 0x08, 0x00, 0x03, 0x01, 0x0D
 };
 
-static struct panel_timing edo_rm67162_qvga_cmd_timing_info = {
+static struct panel_timing truly_rm69090_qvga_cmd_timing_info = {
 	0, 4, 0x09, 0x2c
 };
 
 /*---------------------------------------------------------------------------*/
 /* Panel reset sequence                                                      */
 /*---------------------------------------------------------------------------*/
-static struct panel_reset_sequence edo_rm67162_qvga_cmd_reset_seq = {
+static struct panel_reset_sequence truly_rm69090_qvga_cmd_reset_seq = {
 	{1, 0, 1, }, {1, 12, 12, }, 2
 };
 
 /*---------------------------------------------------------------------------*/
 /* Backlight setting                                                         */
 /*---------------------------------------------------------------------------*/
-static struct backlight edo_rm67162_qvga_cmd_backlight = {
+static struct backlight truly_rm69090_qvga_cmd_backlight = {
 	2, 1, 255, 100, 2, "BL_CTL_DCS"
 };
 
-#endif /*_PANEL_EDO_RM67162_QVGA_CMD_H_*/
+#endif /*_PANEL_TRULY_RM69090_QVGA_CMD_H_*/

@@ -63,6 +63,8 @@
 #define TRULY_VID_PANEL_STRING "1:dsi:0:qcom,mdss_dsi_truly_720p_video:1:none:cfg:single_dsi"
 #define TRULY_CMD_PANEL_STRING "1:dsi:0:qcom,mdss_dsi_truly_720p_cmd:1:none:cfg:single_dsi"
 
+#define VARIANT_MAJOR_MASK        (0x00ff0000)
+
 /*---------------------------------------------------------------------------*/
 /* GPIO configuration                                                        */
 /*---------------------------------------------------------------------------*/
@@ -452,11 +454,16 @@ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
 		pinfo->mipi.use_enable_gpio = 1;
 	} else if (platform_is_sdm439() || platform_is_sdm429() || platform_is_sdm429w()) {
 		reset_gpio.pin_id = 60;
-		if ((platform_is_sdm429() || platform_is_sdm429w()) && hw_subtype
-			== HW_PLATFORM_SUBTYPE_429W_PM660) {
-			reset_gpio.pin_id = 60;
-			pinfo->mipi.use_enable_gpio = 1;
-			enable_gpio.pin_id = 69;
+		if ((platform_is_sdm429() && (board_hardware_subtype() == HW_PLATFORM_SUBTYPE_429W_PM660)) || platform_is_sdm429w()) {
+      if (board_hardware_subtype() == HW_PLATFORM_SUBTYPE_429W_PM660_WDP) {
+        reset_gpio.pin_id = 60;
+        pinfo->mipi.use_enable_gpio = 0;
+      }
+      else {
+        reset_gpio.pin_id = 60;
+			  pinfo->mipi.use_enable_gpio = 1;
+			  enable_gpio.pin_id = 69;
+      }
 		}
 	} else if ((hw_id == HW_PLATFORM_QRD) &&
 		   (hw_subtype == HW_PLATFORM_SUBTYPE_POLARIS)) {
@@ -483,6 +490,13 @@ int target_panel_reset(uint8_t enable, struct panel_reset_sequence *resetseq,
 			.output_buffer = PM_GPIO_OUT_CMOS,
 			.out_strength = PM_GPIO_OUT_DRIVE_HIGH,
 			};
+
+			if (((board_target_id() & VARIANT_MAJOR_MASK)) &&
+				platform_is_sdm429w()) {
+				/* enable PM660 GPIO-12 for backlight enable */
+				bkl_en_gpio.pin_id = 12;
+				gpio_param.inv_int_pol = PM_GPIO_INVERT;
+			}
 
 			dprintf(SPEW, "%s: gpio=%d enable=%d\n", __func__,
 				bkl_en_gpio.pin_id, enable);
@@ -665,9 +679,10 @@ int target_ldo_ctrl(uint8_t enable, struct msm_panel_info *pinfo)
 	else
 		ldo_num |= REG_LDO2;
 
-	if ((platform_is_sdm429() || platform_is_sdm429w()) && hw_subtype
-		== HW_PLATFORM_SUBTYPE_429W_PM660)
-		ldo_num |= REG_LDO13 | REG_LDO15;
+	if ((platform_is_sdm429() && (board_hardware_subtype() == HW_PLATFORM_SUBTYPE_429W_PM660)) || platform_is_sdm429w()) {
+			ldo_num &= ~(REG_LDO17 | REG_LDO5);
+			ldo_num |= REG_LDO13 | REG_LDO15;
+		}
 
 	if (enable) {
 		regulator_enable(ldo_num);

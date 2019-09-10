@@ -210,6 +210,9 @@ static const char *sys_path = " root=/dev/mmcblk0p";
 
 #define MAX_DTBO_IDX_STR 64
 static const char *android_boot_dtbo_idx = " androidboot.dtbo_idx=";
+
+#define MAX_DTB_IDX_STR MAX_DTBO_IDX_STR
+static const char *android_boot_dtb_idx = " androidboot.dtb_idx=";
 #endif
 
 #if VERIFIED_BOOT
@@ -453,6 +456,8 @@ unsigned char *update_cmdline(const char * cmdline)
 	int syspath_buflen = strlen(sys_path) + sizeof(int) + 2; /*allocate buflen for largest possible string*/
 	char dtbo_idx_str[MAX_DTBO_IDX_STR] = "\0";
 	int dtbo_idx = INVALID_PTN;
+	char dtb_idx_str[MAX_DTB_IDX_STR] = "\0";
+	int dtb_idx = INVALID_PTN;
 #endif
 	char syspath_buf[syspath_buflen];
 #if HIBERNATION_SUPPORT
@@ -711,6 +716,13 @@ unsigned char *update_cmdline(const char * cmdline)
 		snprintf(dtbo_idx_str, sizeof(dtbo_idx_str), "%s%d",
 			android_boot_dtbo_idx, dtbo_idx);
 		cmdline_len += strlen (dtbo_idx_str);
+	}
+
+	dtb_idx = get_dtb_idx ();
+	if (dtb_idx != INVALID_PTN) {
+		snprintf(dtb_idx_str, sizeof(dtb_idx_str), "%s%d",
+				 android_boot_dtb_idx, dtb_idx);
+		cmdline_len += strlen (dtb_idx_str);
 	}
 #endif
 
@@ -992,6 +1004,12 @@ unsigned char *update_cmdline(const char * cmdline)
 			--dst;
 			while ((*dst++ = *src++));
 		}
+
+		if (dtb_idx != INVALID_PTN) {
+			src = dtb_idx_str;
+			--dst;
+			while ((*dst++ = *src++));
+		}
 #endif
 	}
 
@@ -1136,7 +1154,7 @@ void boot_linux(void *kernel, unsigned *tags,
 	generate_atags(tags, final_cmdline, ramdisk, ramdisk_size);
 #endif
 
-#if VERIFIED_BOOT || VERIFIED_BOOT_2
+#if VERIFIED_BOOT
 	if (VB_M <= target_get_vb_version())
 	{
 		if (device.verity_mode == 0) {
@@ -1476,8 +1494,11 @@ int boot_linux_from_mmc(void)
 	unsigned ramdisk_actual;
 	unsigned imagesize_actual;
 	unsigned second_actual = 0;
+	void * image_buf = NULL;
 
 	unsigned int dtb_size = 0;
+	unsigned dtb_image_size = 0;
+	uint32_t dtb_image_offset = 0;
 	unsigned int out_len = 0;
 	unsigned int out_avai_len = 0;
 	unsigned char *out_addr = NULL;
@@ -1601,6 +1622,7 @@ int boot_linux_from_mmc(void)
 	}
 	imagesize_actual = (page_size + kernel_actual + ramdisk_actual + second_actual);
 #endif
+	dtb_image_size = hdr->kernel_size;
 
 #ifdef OSVERSION_IN_BOOTIMAGE
 	/* If header version is ONE and booting into recovery,
@@ -1660,7 +1682,31 @@ int boot_linux_from_mmc(void)
 		dprintf(SPEW, "Recovery Dtbo Offset 0x%llx\n", hdr1->recovery_dtbo_offset);
 
 	}
+
+	if ( hdr->header_version == BOOT_HEADER_VERSION_TWO) {
+		struct boot_img_hdr_v1 *hdr1 =
+			(struct boot_img_hdr_v1 *) (image_addr + sizeof(boot_img_hdr));
+		struct boot_img_hdr_v2 *hdr2 = (struct boot_img_hdr_v2 *)
+			(image_addr + sizeof(boot_img_hdr) +
+			BOOT_IMAGE_HEADER_V2_OFFSET);
+		unsigned int recovery_dtbo_actual = 0;
+
+		recovery_dtbo_actual =
+			ROUND_TO_PAGE(hdr1->recovery_dtbo_size, page_mask);
+		imagesize_actual += recovery_dtbo_actual;
+
+		imagesize_actual += ROUND_TO_PAGE(hdr2->dtb_size, page_mask);
+
+
+		dtb_image_offset = page_size + patched_kernel_hdr_size +
+				   kernel_actual + ramdisk_actual + second_actual +
+				   recovery_dtbo_actual;
+
+		dprintf(SPEW, "Header version: %d\n", hdr->header_version);
+		dprintf(SPEW, "Dtb image offset 0x%x\n", dtb_image_offset);
+	}
 #endif
+
 
 	/* Validate the boot/recovery image size is within the bounds of partition size */
 	if (imagesize_actual > image_size) {
@@ -2047,10 +2093,18 @@ int boot_linux_from_mmc(void)
 		 * In case of dtbo, this API is going to read dtbo on scratch.
 		 */
 		void *dtb;
-		dtb = dev_tree_appended(
-				(void*)(image_addr + page_size +
-					patched_kernel_hdr_size),
-				hdr->kernel_size, dtb_offset,
+		image_buf = (void*)(image_addr + page_size + patched_kernel_hdr_size);
+
+#ifdef OSVERSION_IN_BOOTIMAGE
+		if ( hdr->header_version == BOOT_HEADER_VERSION_TWO) {
+
+			image_buf = (void*)(image_addr);
+			dtb_offset = dtb_image_offset;
+			dtb_image_size = imagesize_actual;
+		}
+#endif
+
+		dtb = dev_tree_appended(image_buf, dtb_image_size, dtb_offset,
 				(void *)hdr->tags_addr);
 		if (!dtb) {
 			dprintf(CRITICAL, "ERROR: Appended Device Tree Blob not found\n");
@@ -4401,7 +4455,7 @@ void cmd_set_active(const char *arg, void *data, unsigned sz)
 					if (current_slot_suffix &&
 						!strncmp(p, current_slot_suffix, strlen(current_slot_suffix)))
 					{
-						partition_switch_slots(current_active_slot, i);
+						partition_switch_slots(current_active_slot, i, true);
 						publish_getvar_multislot_vars();
 						fastboot_okay("");
 						return;
@@ -5007,8 +5061,14 @@ void aboot_fastboot_register_commands(void)
 		publish_getvar_multislot_vars();
 
 	/* Max download size supported */
+#if !VERIFIED_BOOT_2
 	snprintf(max_download_size, MAX_RSP_SIZE, "\t0x%x",
 			target_get_max_flash_size());
+#else
+	snprintf(max_download_size, MAX_RSP_SIZE, "\t0x%x",
+			SUB_SALT_BUFF_OFFSET(target_get_max_flash_size()));
+#endif
+
 	fastboot_publish("max-download-size", (const char *) max_download_size);
 	/* Is the charger screen check enabled */
 	snprintf(charger_screen_enabled, MAX_RSP_SIZE, "%d",
