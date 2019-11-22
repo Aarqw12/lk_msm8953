@@ -56,6 +56,6 @@
 #define EACCES 13  /* Permission denied */
 #define ENODEV 19  /* No such device */
 #define EINVAL 22  /* Invalid argument */
-
+#define ERR_I2C_NACK -35
 
 #endif
