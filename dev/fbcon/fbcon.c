@@ -486,6 +486,8 @@ void fbcon_setup(struct fbcon_config *_config)
 
 #if !DISPLAY_SPLASH_SCREEN
 	fbcon_clear();
+#else
+	display_image_on_screen();
 #endif
 
 }
