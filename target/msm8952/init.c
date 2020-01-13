@@ -69,6 +69,10 @@
 #include <vibrator.h>
 #endif
 
+#if ENABLE_WBC
+#include <qpnp-smb2.h>
+#endif
+
 #if PON_VIB_SUPPORT
 #define VIBRATE_TIME    250
 #endif
@@ -385,6 +389,15 @@ void target_init(void)
 #if SMD_SUPPORT
 	rpm_smd_init();
 #endif
+
+#if ENABLE_WBC
+	if(sdm429_pm660_target())
+	{
+		/* Start Weak Battery Charging */
+		weak_battery_charging();
+	}
+#endif
+
 }
 
 void target_serialno(unsigned char *buf)
@@ -798,4 +811,3 @@ void pmic_reset_configure(uint8_t reset_type)
 		}
 	}
 }
-
