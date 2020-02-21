@@ -10,7 +10,7 @@
 	qcom,board-id= <0x0b 0>;
 
 	model = "Xiaomi Redmi Note 4X Snapdragon (mido)";
-	compatible = "xiaomi,mido", "qcom,msm8916", "lk2nd,device";
+	compatible = "xiaomi,mido", "qcom,msm8953", "lk2nd,device";
 
 	// Bootloader won't continue if it can't delete some nodes from below
 	soc {
