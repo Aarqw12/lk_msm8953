@@ -245,7 +245,9 @@ static void power_key_func(struct select_msg_info* msg_info)
 			   * Update the warning message and recalculate the timeout
 			   */
 			  before_time = current_time();
+#if VERIFIED_BOOT
 			  display_bootverify_menu_update (msg_info);
+#endif
 			  isreflash = TRUE;
 			} else {
 			  reason = CONTINUE;
