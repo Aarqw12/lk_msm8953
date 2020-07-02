@@ -266,7 +266,7 @@ NOECHO ?= @
 include make/build.mk
 
 clean: $(EXTRA_CLEANDEPS)
-	rm -f $(ALLOBJS) $(DTBS) $(DEPS) $(GENERATED) $(OUTBIN) $(OUTELF) $(OUTELF).lst $(OUTELF_STRIP)
+	rm -rf $(ALLOBJS) $(DTBS) $(DEPS) $(GENERATED) $(OUTBIN) $(OUTELF) $(OUTELF).lst $(OUTELF_STRIP) $(BUILDDIR)
 
 install: all
 	scp $(OUTBIN) 192.168.0.4:/tftproot
