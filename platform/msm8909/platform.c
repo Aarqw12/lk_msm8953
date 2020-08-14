@@ -1,4 +1,4 @@
-/* Copyright (c) 2014-2015, 2017, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2014-2015, 2017, 2020 The Linux Foundation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -35,6 +35,7 @@
 #include <arch/arm/mmu.h>
 #include <smem.h>
 #include <target/display.h>
+#include <platform/partial_goods.h>
 
 #define MB (1024*1024)
 
@@ -204,6 +205,7 @@ int platform_is_msm8909()
 		case MSM8208:
 		case APQ8009:
 		case MSM8609:
+		case MSM8905:
 			ret = 1;
 			break;
 		default:
@@ -216,6 +218,23 @@ int platform_is_msm8909()
 int boot_device_mask(int val)
 {
 	return ((val & 0x0E) >> 1);
+}
+
+int platform_partial_goods_val ()
+{
+	uint32_t platform = board_platform_id();
+	int reg = -1;
+
+	if (platform == MSM8905) {
+		/*
+		 * The register bits 20 to 27 have the feature id info:
+		 * Value: 0x0/0x1 - Dual core
+		 * Value: 0x2 - Quad core
+		*/
+		reg = readl(QFPROM_RAW_PART_ADDR);
+		reg = (reg & 0xff00000) >> 20;
+	}
+	return reg;
 }
 
 uint32_t platform_detect_panel()
