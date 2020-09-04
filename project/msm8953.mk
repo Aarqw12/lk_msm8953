@@ -105,8 +105,8 @@ ifeq ($(ENABLE_USB30_SUPPORT),1)
 DEFINES += USB30_SUPPORT=1
 endif
 
-ifeq ($(APPEND_CMDLINE),1)
-DEFINES += _APPEND_CMDLINE=1
+ifeq ($(APPEND_CMDLINE),0)
+DEFINES += _APPEND_CMDLINE=0
 endif
 
 #SCM call before entering DLOAD mode

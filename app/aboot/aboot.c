@@ -189,7 +189,7 @@ static const char *baseband_sglte2  = " androidboot.baseband=sglte2";
 static const char *warmboot_cmdline = " qpnp-power-on.warm_boot=1";
 static const char *baseband_apq_nowgr   = " androidboot.baseband=baseband_apq_nowgr";
 static const char *androidboot_slot_suffix = " androidboot.slot_suffix=";
-static const char *skip_ramfs = " skip_initramfs";
+static const char *skip_ramfs = " want_initramfs";
 
 #if HIBERNATION_SUPPORT
 static const char *resume = " resume=/dev/mmcblk0p";
